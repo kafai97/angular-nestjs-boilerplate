@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  application:
+    image: node:12-alpine
+    container_name: ng_application
+    restart: always
+    environment:
+      DATABASE_CLIENT: mysql
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: ${MYSQL_DATABASE}
+      DATABASE_USERNAME: ${MYSQL_USER}
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npm run serve
+    depends_on:
+      - db
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.0
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_PORT: 3306
+      PMA_HOST: db
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.4
+    container_name: database
+    restart: always
+    environment:
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+
+  nginx:
+    image: nginx:1.17-alpine
+    container_name: nginx_proxy
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    ports:
+      - 80:80
+    depends_on:
+      - application
+      - phpmyadmin
+
+volumes:
+  db_data:
